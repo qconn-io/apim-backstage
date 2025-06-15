@@ -82,10 +82,11 @@ services:
     restart: unless-stopped
 
   strapi:
+    # Build Strapi locally from Dockerfile - not pulling from public registry
     build: 
       context: ./strapi-app
       dockerfile: Dockerfile
-    image: strapi:latest
+    image: apim-backstage/strapi:latest
     container_name: strapi
     environment:
       DATABASE_CLIENT: postgres
