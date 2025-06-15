@@ -1,0 +1,15 @@
+FROM curlimages/curl:8.10.1
+
+# Install required tools
+USER root
+RUN apk add --no-cache bash python3
+
+# Copy the configuration script
+COPY configure-realms.sh /opt/configure-realms.sh
+RUN chmod +x /opt/configure-realms.sh
+
+# Set working directory
+WORKDIR /opt
+
+# Default command
+CMD ["./configure-realms.sh"]

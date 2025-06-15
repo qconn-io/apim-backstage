@@ -1,0 +1,7 @@
+FROM quay.io/keycloak/keycloak:26.2.5
+
+# Build Keycloak with health checks and metrics enabled to activate management interface
+RUN /opt/keycloak/bin/kc.sh build --health-enabled=true --metrics-enabled=true
+
+# Use the default entrypoint and start-dev command
+ENTRYPOINT ["/opt/keycloak/bin/kc.sh"]

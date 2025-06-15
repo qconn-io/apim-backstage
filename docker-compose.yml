@@ -36,12 +36,14 @@ services:
     restart: unless-stopped
 
   keycloak:
-    image: quay.io/keycloak/keycloak:24.0
+    build:
+      context: ./keycloak
+      dockerfile: Dockerfile.keycloak
     container_name: keycloak
     command: start-dev
     environment:
-      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER:-admin}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
       KC_DB: postgres
       KC_DB_URL_HOST: postgres-keycloak
       KC_DB_URL_DATABASE: ${POSTGRES_KEYCLOAK_DB:-keycloak}
@@ -53,17 +55,36 @@ services:
       KC_HOSTNAME_STRICT_HTTPS: false
       KC_HTTP_ENABLED: true
       KC_PROXY: edge
+      KC_HTTP_MANAGEMENT_PORT: 9000
     ports:
       - "${KEYCLOAK_PORT:-8080}:8080"
+      - "${KEYCLOAK_MGMT_PORT:-9000}:9000"
     depends_on:
       postgres-keycloak: # Define postgres-keycloak or reuse an existing one
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "timeout 10 bash -c '</dev/tcp/localhost/8080' || exit 1"]
+      test: ["CMD", "sh", "-c", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /realms/master HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q 'HTTP/1.1 200' <&3"]
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
+      start_period: 90s
     restart: unless-stopped
+
+  keycloak-init:
+    build:
+      context: ./keycloak
+      dockerfile: Dockerfile.init
+    container_name: keycloak-init
+    environment:
+      KEYCLOAK_URL: http://keycloak:8080
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    networks:
+      - default
+    restart: "no"
 
   # Adding a dedicated PostgreSQL for Keycloak as per best practices
   postgres-keycloak:
