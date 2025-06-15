@@ -94,11 +94,13 @@ services:
       DATABASE_NAME: ${POSTGRES_STRAPI_DB:-strapi}
       DATABASE_USERNAME: ${POSTGRES_STRAPI_USER:-strapi}
       DATABASE_PASSWORD: ${POSTGRES_STRAPI_PASSWORD:-strapi}
-      DATABASE_SSL: "false" # Set to true if SSL is configured on Postgres
-      JWT_SECRET: ${STRAPI_JWT_SECRET}
-      ADMIN_JWT_SECRET: ${STRAPI_ADMIN_JWT_SECRET}
-      APP_KEYS: ${STRAPI_APP_KEYS}
-      NODE_ENV: development # Change to production as needed
+      DATABASE_SSL: "false"
+      JWT_SECRET: ${STRAPI_JWT_SECRET:-your-jwt-secret-change-in-production}
+      ADMIN_JWT_SECRET: ${STRAPI_ADMIN_JWT_SECRET:-your-admin-jwt-secret-change-in-production}
+      APP_KEYS: ${STRAPI_APP_KEYS:-app-key-1,app-key-2,app-key-3,app-key-4}
+      API_TOKEN_SALT: ${STRAPI_API_TOKEN_SALT:-your-api-token-salt-change-in-production}
+      TRANSFER_TOKEN_SALT: ${STRAPI_TRANSFER_TOKEN_SALT:-your-transfer-token-salt-change-in-production}
+      NODE_ENV: development
     volumes:
       - ./strapi-app/src:/opt/app/src # Mount source code for development
       - ./strapi-app/config:/opt/app/config # Mount config for development

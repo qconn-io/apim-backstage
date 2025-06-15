@@ -1,0 +1,44 @@
+# Prevent copying local node_modules
+node_modules/
+npm-debug.log*
+
+# Prevent copying local environment files
+.env
+.env.local
+
+# Prevent copying git files
+.git/
+.gitignore
+
+# Prevent copying OS files
+.DS_Store
+Thumbs.db
+
+# Prevent copying build artifacts that should be rebuilt in container
+dist/
+build/
+.cache/
+
+# Prevent copying local uploads and data
+public/uploads/*
+!public/uploads/.gitkeep
+
+# Prevent copying local database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Prevent copying logs
+*.log
+logs/
+
+# Prevent copying coverage and test artifacts
+coverage/
+.nyc_output/
+test-results/
+
+# Prevent copying IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
