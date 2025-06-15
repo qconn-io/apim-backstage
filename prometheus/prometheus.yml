@@ -1,0 +1,28 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'otel-collector'
+    static_configs:
+      - targets: ['otel-collector:8889'] # Prometheus exporter metrics path for otel-collector
+
+  - job_name: 'loki'
+    static_configs:
+      - targets: ['loki:3100'] # Loki metrics endpoint
+
+  - job_name: 'kafka'
+    static_configs:
+      - targets: ['kafka:9092'] # Assuming JMX exporter is configured on Kafka or using a Kafka exporter sidecar
+                                # This might need a dedicated Kafka exporter service for richer metrics.
+                                # For now, this is a placeholder if Kafka exposes a /metrics endpoint.
+
+  # Add other services that expose Prometheus metrics here
+  # For example, if your API Gateway (Kong, APISIX) has a Prometheus exporter:
+  # - job_name: 'api-gateway'
+  #   static_configs:
+  #     - targets: ['api-gateway-hostname:port']

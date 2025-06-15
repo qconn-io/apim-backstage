@@ -1,0 +1,270 @@
+services:
+  postgres-backstage:
+    image: postgres:16
+    container_name: postgres-backstage
+    environment:
+      POSTGRES_USER: ${POSTGRES_BACKSTAGE_USER:-backstage}
+      POSTGRES_PASSWORD: ${POSTGRES_BACKSTAGE_PASSWORD:-backstage}
+      POSTGRES_DB: ${POSTGRES_BACKSTAGE_DB:-backstage}
+    ports:
+      - "${POSTGRES_BACKSTAGE_PORT:-5432}:5432"
+    volumes:
+      - postgres-backstage-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_BACKSTAGE_USER:-backstage} -d ${POSTGRES_BACKSTAGE_DB:-backstage}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  postgres-strapi:
+    image: postgres:16
+    container_name: postgres-strapi
+    environment:
+      POSTGRES_USER: ${POSTGRES_STRAPI_USER:-strapi}
+      POSTGRES_PASSWORD: ${POSTGRES_STRAPI_PASSWORD:-strapi}
+      POSTGRES_DB: ${POSTGRES_STRAPI_DB:-strapi}
+    ports:
+      - "${POSTGRES_STRAPI_PORT:-5433}:5432"
+    volumes:
+      - postgres-strapi-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_STRAPI_USER:-strapi} -d ${POSTGRES_STRAPI_DB:-strapi}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: keycloak
+    command: start-dev
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_DB: postgres
+      KC_DB_URL_HOST: postgres-keycloak # Will add this service if Keycloak needs its own DB
+      KC_DB_URL_DATABASE: ${POSTGRES_KEYCLOAK_DB:-keycloak}
+      KC_DB_USERNAME: ${POSTGRES_KEYCLOAK_USER:-keycloak}
+      KC_DB_PASSWORD: ${POSTGRES_KEYCLOAK_PASSWORD:-keycloak}
+      KC_HTTP_PORT: 8080
+      KC_HOSTNAME: ${KEYCLOAK_HOSTNAME:-localhost}
+      KC_PROXY: edge # For running behind a reverse proxy if needed in later stages
+    ports:
+      - "${KEYCLOAK_PORT:-8080}:8080"
+    depends_on:
+      postgres-keycloak: # Define postgres-keycloak or reuse an existing one
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 10 bash -c '</dev/tcp/localhost/8080' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Adding a dedicated PostgreSQL for Keycloak as per best practices
+  postgres-keycloak:
+    image: postgres:16
+    container_name: postgres-keycloak
+    environment:
+      POSTGRES_USER: ${POSTGRES_KEYCLOAK_USER:-keycloak}
+      POSTGRES_PASSWORD: ${POSTGRES_KEYCLOAK_PASSWORD:-keycloak}
+      POSTGRES_DB: ${POSTGRES_KEYCLOAK_DB:-keycloak}
+    ports:
+      - "${POSTGRES_KEYCLOAK_PORT:-5434}:5432"
+    volumes:
+      - postgres-keycloak-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_KEYCLOAK_USER:-keycloak} -d ${POSTGRES_KEYCLOAK_DB:-keycloak}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  strapi:
+    build: 
+      context: ./strapi-app
+      dockerfile: Dockerfile
+    image: strapi:latest
+    container_name: strapi
+    environment:
+      DATABASE_CLIENT: postgres
+      DATABASE_HOST: postgres-strapi
+      DATABASE_PORT: 5432
+      DATABASE_NAME: ${POSTGRES_STRAPI_DB:-strapi}
+      DATABASE_USERNAME: ${POSTGRES_STRAPI_USER:-strapi}
+      DATABASE_PASSWORD: ${POSTGRES_STRAPI_PASSWORD:-strapi}
+      DATABASE_SSL: "false" # Set to true if SSL is configured on Postgres
+      JWT_SECRET: ${STRAPI_JWT_SECRET}
+      ADMIN_JWT_SECRET: ${STRAPI_ADMIN_JWT_SECRET}
+      APP_KEYS: ${STRAPI_APP_KEYS}
+      NODE_ENV: development # Change to production as needed
+    volumes:
+      - ./strapi-app/src:/opt/app/src # Mount source code for development
+      - ./strapi-app/config:/opt/app/config # Mount config for development
+      - ./strapi-app/public:/opt/app/public # Mount public files
+    ports:
+      - "${STRAPI_PORT:-1337}:1337"
+    depends_on:
+      postgres-strapi:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:1337/_health || exit 1"] # Use health endpoint
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s # Give Strapi more time to build and start
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.51.2
+    container_name: prometheus
+    volumes:
+      - ./prometheus:/etc/prometheus/
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.0.0
+    container_name: grafana
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning # For dashboards and datasources
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: loki
+    ports:
+      - "${LOKI_PORT:-3100}:3100"
+    volumes:
+      - ./loki:/etc/loki
+      - loki-data:/loki
+    command: -config.file=/etc/loki/loki-config.yaml
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -S -O /dev/null http://localhost:3100/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.100.0
+    container_name: otel-collector
+    command: ["--config=/etc/otelcol-contrib/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector/otel-collector-config.yaml:/etc/otelcol-contrib/otel-collector-config.yaml
+    ports:
+      - "${OTEL_COLLECTOR_PORT_GRPC:-4317}:4317" # OTLP gRPC
+      - "${OTEL_COLLECTOR_PORT_HTTP:-4318}:4318" # OTLP HTTP
+      - "${OTEL_COLLECTOR_PORT_ZIPKIN:-9411}:9411" # Zipkin
+    depends_on:
+      loki:
+        condition: service_healthy
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 5 bash -c '</dev/tcp/localhost/13133' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  opa:
+    image: openpolicyagent/opa:0.65.0
+    container_name: opa
+    ports:
+      - "${OPA_PORT:-8181}:8181"
+    command:
+      - "run"
+      - "--server"
+      - "--log-level=info"
+      # - "--authorization=bearer" # Example: Add token auth for OPA API if needed
+      # - "--authentication=bearer"
+    # volumes: # Mount policies if needed, e.g. from a local ./policies directory
+      # - ./policies:/policies
+    healthcheck:
+      test: ["CMD", "/opa", "version"]  # Simple check that OPA binary works
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  zookeeper:
+    image: bitnami/zookeeper:3.9
+    container_name: zookeeper
+    ports:
+      - "${ZOOKEEPER_PORT:-2181}:2181"
+    environment:
+      ALLOW_ANONYMOUS_LOGIN: "yes"
+    volumes:
+      - zookeeper-data:/bitnami/zookeeper
+    healthcheck:
+      test: echo stat | nc localhost 2181
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  kafka: # Event Bus
+    image: bitnami/kafka:3.7
+    container_name: kafka
+    ports:
+      - "${KAFKA_PORT_EXTERNAL:-9092}:9092" # For external connections from your machine
+      - "${KAFKA_PORT_INTERNAL:-9093}:9093" # For internal connections from other containers
+    environment:
+      KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CFG_LISTENERS: CLIENT://:9093,EXTERNAL://:9092
+      KAFKA_CFG_ADVERTISED_LISTENERS: CLIENT://kafka:9093,EXTERNAL://localhost:${KAFKA_PORT_EXTERNAL:-9092}
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: CLIENT
+      KAFKA_BROKER_ID: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    volumes:
+      - kafka-data:/bitnami/kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/bitnami/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9093 --list || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres-backstage-data:
+  postgres-strapi-data:
+  postgres-keycloak-data:
+  prometheus-data:
+  grafana-data:
+  loki-data:
+  zookeeper-data:
+  kafka-data:
+  strapi-app: # Ensure this volume is managed or data might be lost if not mounting a local dir

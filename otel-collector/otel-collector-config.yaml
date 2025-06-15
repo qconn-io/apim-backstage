@@ -1,0 +1,57 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+  zipkin:
+    endpoint: 0.0.0.0:9411
+  # Potentially add a Docker stats receiver if you want to collect container metrics directly
+  # docker_stats:
+  #   interval: 10s
+  #   collect_container_labels: true
+
+exporters:
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    namespace: platform
+  loki:
+    endpoint: http://loki:3100/loki/api/v1/push
+    # Optional: Add labels for logs sent to Loki
+    # labels:
+    #   resource:
+    #     service.name: "service_name"
+    #     service.instance.id: "service_instance_id"
+  logging:
+    loglevel: debug # For debugging, can be changed to info or warn
+
+processors:
+  batch:
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 75
+    spike_limit_percentage: 15
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp, zipkin]
+      processors: [memory_limiter, batch]
+      exporters: [logging] # Replace with actual trace storage like Jaeger or Tempo if needed
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [prometheus, logging]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [loki, logging]
+  telemetry:
+    logs:
+      level: "info"
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133

@@ -1,0 +1,128 @@
+# Environment variables and secrets
+.env
+.env.local
+.env.production
+.env.development
+.env.test
+*.secret
+*.key
+*.pem
+
+# Docker data and logs
+docker-compose.override.yml
+docker-compose.prod.yml
+*.log
+
+# Node.js
+node_modules/
+dist/
+build/
+coverage/
+.nyc_output/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Backstage specific
+packages/backend/dist/
+packages/app/dist/
+packages/*/dist/
+packages/*/build/
+plugins/*/dist/
+.backstage/
+backstage-data/
+
+# Strapi specific
+.cache/
+build/
+public/uploads/
+.strapi-updater.json
+.strapi/
+
+# Next.js (for partner portal)
+.next/
+out/
+.vercel
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# PostgreSQL dumps
+*.sql
+*.dump
+
+# Keycloak exports (may contain sensitive data)
+realm-export-*.json
+
+# Monitoring and observability data
+prometheus-data/
+grafana-data/
+loki-data/
+tempo-data/
+jaeger-data/
+
+# Container data volumes
+postgres-data/
+kafka-data/
+zookeeper-data/
+elasticsearch-data/
+redis-data/
+
+# IDE and editor specific
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+*.swo
+*~
+
+# OS specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Test artifacts
+test-results/
+*.coverage
+coverage.xml
+junit.xml
+
+# Temporary files
+*.tmp
+*.temp
+.temp/
+.tmp/
+
+# Package manager locks (consider project policy)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# Runtime files
+*.pid
+*.seed
+*.pid.lock
+
+# Archive files
+*.tar
+*.tar.gz
+*.zip
+*.rar
+
+# Terraform (if used for infrastructure)
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
