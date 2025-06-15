@@ -1,0 +1,49 @@
+{
+  "realms": [
+    "internal-realm-export.json",
+    "partners-realm-export.json"
+  ],
+  "exported_at": "2025-06-15T18:30:00Z",
+  "export_version": "1.0",
+  "keycloak_version": "24.0",
+  "description": "Combined realm export for API Management Platform - two separate realms for internal and partner identity management",
+  "security_notes": {
+    "client_secrets": "Default client secrets are used for development only. MUST be changed in production.",
+    "password_policies": {
+      "internal": "Minimum 8 characters with mixed case, digits",
+      "partners": "Minimum 12 characters with mixed case, digits, special characters"
+    },
+    "token_lifespans": {
+      "access_token": "3600 seconds (1 hour)",
+      "refresh_token": "1800 seconds (30 minutes)"
+    },
+    "brute_force_protection": "Enabled on both realms with 30 failure attempts tolerance"
+  },
+  "clients": {
+    "internal_realm": [
+      {
+        "client_id": "backstage",
+        "purpose": "Backstage.io developer portal authentication",
+        "secret": "backstage-client-secret",
+        "redirect_uris": ["http://localhost:7007/api/auth/oidc/handler/frame", "http://localhost:7007/*"]
+      },
+      {
+        "client_id": "grafana", 
+        "purpose": "Grafana monitoring dashboard authentication",
+        "secret": "grafana-client-secret",
+        "redirect_uris": ["http://localhost:3000/login/oauth", "http://localhost:3000/*"]
+      }
+    ]
+  },
+  "groups": {
+    "internal_realm": [
+      "platform-admins",
+      "developers", 
+      "api-owners"
+    ],
+    "partners_realm": [
+      "verified-partners",
+      "trial-users"
+    ]
+  }
+}
