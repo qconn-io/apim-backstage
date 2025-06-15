@@ -78,3 +78,60 @@ Once implementation begins:
 - Web Application Firewall (WAF) for public endpoints
 - Zero Trust principles throughout
 - Network policies for component isolation
+
+## Development Commands
+
+### Infrastructure & Services
+- `docker-compose up -d` - Start all platform services
+- `docker-compose down` - Stop all services
+- `docker-compose ps` - Check service status
+- `./test-integration.sh` - Run integration tests to verify platform setup
+- `./keycloak/configure-realms.sh` - Configure Keycloak realms (run after Keycloak is ready)
+- `./keycloak/verify-config.sh` - Verify Keycloak configuration
+- `./verify-epic3.sh` - Verify Epic 3 (Backstage setup) is complete
+
+### Backstage Development
+- `cd backstage && yarn install` - Install Backstage dependencies
+- `cd backstage && yarn start` - Start Backstage in development mode
+- `cd backstage && yarn build:all` - Build all Backstage packages
+- `cd backstage && yarn test` - Run all tests
+- `cd backstage && yarn test:all` - Run tests with coverage
+- `cd backstage && yarn lint:all` - Run linting for all packages
+- `cd backstage && yarn tsc` - Run TypeScript compilation check
+- `cd backstage && yarn test:e2e` - Run end-to-end tests with Playwright
+
+### Strapi Development
+- `cd strapi-app && npm run dev` - Start Strapi in development mode
+- `cd strapi-app && npm run build` - Build Strapi for production
+- `cd strapi-app && npm start` - Start Strapi in production mode
+
+## Service Access Points
+
+When services are running via Docker Compose:
+- **Backstage Frontend**: http://localhost:3001
+- **Backstage Backend**: http://localhost:7007
+- **Keycloak Admin**: http://localhost:8080 (admin/admin)
+- **Strapi Admin**: http://localhost:1337/admin
+- **Grafana**: http://localhost:3000 (admin/admin)
+- **Prometheus**: http://localhost:9090
+- **Loki**: http://localhost:3100
+- **OPA**: http://localhost:8181
+- **PostgreSQL (Backstage)**: localhost:5432
+- **PostgreSQL (Strapi)**: localhost:5433
+- **PostgreSQL (Keycloak)**: localhost:5434
+
+## Development Workflow
+
+1. **Initial Setup**: Start with infrastructure services using `docker-compose up -d`
+2. **Configuration**: Run Keycloak realm configuration with `./keycloak/configure-realms.sh`
+3. **Verification**: Use `./test-integration.sh` to verify the platform is properly configured
+4. **Development**: Use individual service commands for active development
+5. **Testing**: Run integration tests before committing changes
+
+## Key Configuration Files
+
+- `docker-compose.yml` - Main service orchestration
+- `backstage/app-config.yaml` - Backstage configuration
+- `backstage/app-config.local.yaml` - Local development overrides
+- `keycloak/configure-realms.sh` - Keycloak setup script
+- Environment variables use `.env` file (copy from `.env.example`)

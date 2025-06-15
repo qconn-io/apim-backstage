@@ -60,6 +60,8 @@ This repository currently contains comprehensive documentation and infrastructur
 
 ## Quick Start
 
+### DO NOT claude --dangerously-skip-permissions 
+
 ### Prerequisites
 
 - Docker and Docker Compose

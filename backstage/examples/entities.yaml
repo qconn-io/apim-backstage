@@ -1,0 +1,114 @@
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-system
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: api-management-platform
+  description: Decoupled API Management Platform
+spec:
+  owner: platform-team
+---
+# Example OpenAPI service for the API Management Platform
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: petstore-api
+  description: Swagger Petstore API example
+  annotations:
+    github.com/project-slug: swagger-api/swagger-petstore
+spec:
+  type: service
+  lifecycle: production
+  owner: api-team
+  system: api-management-platform
+  providesApis: [petstore-openapi]
+---
+# Example OpenAPI specification
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: petstore-openapi
+  description: Swagger Petstore API
+  links:
+    - url: https://petstore.swagger.io/
+      title: Live API
+spec:
+  type: openapi
+  lifecycle: production
+  owner: api-team
+  system: api-management-platform
+  definition: |
+    openapi: 3.0.0
+    info:
+      title: Swagger Petstore
+      description: This is a sample Pet Store Server
+      version: 1.0.0
+    servers:
+      - url: https://petstore.swagger.io/v2
+    paths:
+      /pet:
+        post:
+          tags:
+            - pet
+          summary: Add a new pet to the store
+          operationId: addPet
+          requestBody:
+            description: Pet object that needs to be added to the store
+            required: true
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Pet'
+          responses:
+            '200':
+              description: successful operation
+            '405':
+              description: Invalid input
+      /pet/{petId}:
+        get:
+          tags:
+            - pet
+          summary: Find pet by ID
+          operationId: getPetById
+          parameters:
+            - name: petId
+              in: path
+              required: true
+              schema:
+                type: integer
+                format: int64
+          responses:
+            '200':
+              description: successful operation
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/Pet'
+            '400':
+              description: Invalid ID supplied
+            '404':
+              description: Pet not found
+    components:
+      schemas:
+        Pet:
+          type: object
+          required:
+            - name
+            - photoUrls
+          properties:
+            id:
+              type: integer
+              format: int64
+            name:
+              type: string
+              example: doggie
+            photoUrls:
+              type: array
+              items:
+                type: string
+            status:
+              type: string
+              enum:
+                - available
+                - pending
+                - sold

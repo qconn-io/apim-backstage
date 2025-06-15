@@ -284,6 +284,38 @@ services:
       retries: 5
     restart: unless-stopped
 
+  backstage:
+    build:
+      context: ./backstage
+      dockerfile: Dockerfile
+    container_name: backstage
+    environment:
+      POSTGRES_HOST: postgres-backstage
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_BACKSTAGE_USER:-backstage}
+      POSTGRES_PASSWORD: ${POSTGRES_BACKSTAGE_PASSWORD:-backstage}
+      POSTGRES_DB: ${POSTGRES_BACKSTAGE_DB:-backstage}
+      BACKEND_SECRET: ${BACKSTAGE_SECRET:-backstage-secret-key-change-in-production}
+      KEYCLOAK_BASE_URL: http://keycloak:8080
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_BACKSTAGE_CLIENT_ID:-backstage}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_BACKSTAGE_CLIENT_SECRET:-backstage-client-secret}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      NODE_ENV: production
+    ports:
+      - "${BACKSTAGE_PORT:-3001}:7007"
+    depends_on:
+      postgres-backstage:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:7007/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+    restart: unless-stopped
+
 volumes:
   postgres-backstage-data:
   postgres-strapi-data:

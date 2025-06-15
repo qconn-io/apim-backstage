@@ -1,0 +1,89 @@
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-user
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: guest
+spec:
+  memberOf: [guests]
+---
+# Test users from Keycloak internal realm
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: testuser
+  description: Test user for Backstage authentication
+spec:
+  profile:
+    displayName: Test User
+    email: testuser@example.com
+  memberOf: [developers]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: admin
+  description: Admin user for platform management
+spec:
+  profile:
+    displayName: Admin User
+    email: admin@example.com
+  memberOf: [platform-admins]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: developer
+  description: Developer user for API development
+spec:
+  profile:
+    displayName: Developer User
+    email: dev@example.com
+  memberOf: [developers, api-team]
+---
+# Groups aligned with Keycloak realm groups
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: guests
+  description: Guest users (development only)
+spec:
+  type: team
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: platform-admins
+  description: Platform administrators with full access
+spec:
+  type: team
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: developers
+  description: Internal developers with API catalog access
+spec:
+  type: team
+  children: [api-team]
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: api-team
+  description: API owners responsible for API lifecycle
+spec:
+  type: team
+  parent: developers
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: platform-team
+  description: Platform engineering team
+spec:
+  type: team
+  children: []

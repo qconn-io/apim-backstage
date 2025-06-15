@@ -153,6 +153,133 @@ create_client() {
     fi
 }
 
+# Function to create group
+create_group() {
+    local realm_name=$1
+    local group_name=$2
+    local group_config=$3
+    local token=$4
+    
+    if group_exists "$realm_name" "$group_name" "$token"; then
+        echo "⏭️  Group ${group_name} already exists in realm ${realm_name}, skipping creation"
+        return 0
+    fi
+    
+    echo "📝 Creating group ${group_name} in realm: ${realm_name}"
+    
+    curl -s -X POST "${KEYCLOAK_URL}/admin/realms/${realm_name}/groups" \
+        -H "Authorization: Bearer ${token}" \
+        -H "Content-Type: application/json" \
+        -d "${group_config}"
+    
+    if [ $? -eq 0 ]; then
+        echo "✅ Group ${group_name} created successfully in realm ${realm_name}"
+    else
+        echo "❌ Failed to create group ${group_name} in realm ${realm_name}"
+        return 1
+    fi
+}
+
+# Function to check if user exists in realm
+user_exists() {
+    local realm_name=$1
+    local username=$2
+    local token=$3
+    
+    local response=$(curl -s "${KEYCLOAK_URL}/admin/realms/${realm_name}/users?username=${username}" \
+        -H "Authorization: Bearer ${token}")
+    
+    echo "$response" | grep -q "\"username\":\"${username}\""
+}
+
+# Function to create user
+create_user() {
+    local realm_name=$1
+    local username=$2
+    local email=$3
+    local first_name=$4
+    local last_name=$5
+    local password=$6
+    local token=$7
+    
+    if user_exists "$realm_name" "$username" "$token"; then
+        echo "⏭️  User ${username} already exists in realm ${realm_name}, skipping creation"
+        return 0
+    fi
+    
+    echo "👤 Creating user ${username} in realm: ${realm_name}"
+    
+    # Create user
+    local user_config='{
+        "username": "'${username}'",
+        "email": "'${email}'",
+        "firstName": "'${first_name}'",
+        "lastName": "'${last_name}'",
+        "enabled": true,
+        "emailVerified": true,
+        "credentials": [{
+            "type": "password",
+            "value": "'${password}'",
+            "temporary": false
+        }]
+    }'
+    
+    local create_response=$(curl -s -X POST "${KEYCLOAK_URL}/admin/realms/${realm_name}/users" \
+        -H "Authorization: Bearer ${token}" \
+        -H "Content-Type: application/json" \
+        -d "${user_config}")
+    
+    if [ $? -eq 0 ]; then
+        echo "✅ User ${username} created successfully in realm ${realm_name}"
+        return 0
+    else
+        echo "❌ Failed to create user ${username} in realm ${realm_name}"
+        return 1
+    fi
+}
+
+# Function to add user to group
+add_user_to_group() {
+    local realm_name=$1
+    local username=$2
+    local group_name=$3
+    local token=$4
+    
+    echo "👥 Adding user ${username} to group ${group_name} in realm ${realm_name}"
+    
+    # Get user ID
+    local user_response=$(curl -s "${KEYCLOAK_URL}/admin/realms/${realm_name}/users?username=${username}" \
+        -H "Authorization: Bearer ${token}")
+    local user_id=$(echo "$user_response" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+    
+    if [ -z "$user_id" ]; then
+        echo "❌ Could not find user ${username} in realm ${realm_name}"
+        return 1
+    fi
+    
+    # Get group ID
+    local group_response=$(curl -s "${KEYCLOAK_URL}/admin/realms/${realm_name}/groups" \
+        -H "Authorization: Bearer ${token}")
+    local group_id=$(echo "$group_response" | grep -B5 -A5 "\"name\":\"${group_name}\"" | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
+    
+    if [ -z "$group_id" ]; then
+        echo "❌ Could not find group ${group_name} in realm ${realm_name}"
+        return 1
+    fi
+    
+    # Add user to group
+    curl -s -X PUT "${KEYCLOAK_URL}/admin/realms/${realm_name}/users/${user_id}/groups/${group_id}" \
+        -H "Authorization: Bearer ${token}"
+    
+    if [ $? -eq 0 ]; then
+        echo "✅ User ${username} added to group ${group_name} successfully"
+        return 0
+    else
+        echo "❌ Failed to add user ${username} to group ${group_name}"
+        return 1
+    fi
+}
+
 # Wait for Keycloak to be ready
 if ! wait_for_keycloak; then
     echo "❌ Keycloak is not ready, exiting"
@@ -446,33 +573,6 @@ GRAFANA_CLIENT_CONFIG='{
     ]
 }'
 
-# Function to create group
-create_group() {
-    local realm_name=$1
-    local group_name=$2
-    local group_config=$3
-    local token=$4
-    
-    if group_exists "$realm_name" "$group_name" "$token"; then
-        echo "⏭️  Group ${group_name} already exists in realm ${realm_name}, skipping creation"
-        return 0
-    fi
-    
-    echo "📝 Creating group ${group_name} in realm: ${realm_name}"
-    
-    curl -s -X POST "${KEYCLOAK_URL}/admin/realms/${realm_name}/groups" \
-        -H "Authorization: Bearer ${token}" \
-        -H "Content-Type: application/json" \
-        -d "${group_config}"
-    
-    if [ $? -eq 0 ]; then
-        echo "✅ Group ${group_name} created successfully in realm ${realm_name}"
-    else
-        echo "❌ Failed to create group ${group_name} in realm ${realm_name}"
-        return 1
-    fi
-}
-
 # Create Backstage client in internal realm
 create_client "internal" "$BACKSTAGE_CLIENT_CONFIG" "$TOKEN" "backstage"
 
@@ -490,6 +590,30 @@ echo "📝 Creating default groups in partners realm..."
 create_group "partners" "verified-partners" '{"name": "verified-partners", "attributes": {"description": ["Verified partner developers"]}}' "$TOKEN"
 create_group "partners" "trial-users" '{"name": "trial-users", "attributes": {"description": ["Trial users with limited access"]}}' "$TOKEN"
 
+# Create test users in internal realm
+echo "👤 Creating test users in internal realm..."
+create_user "internal" "testuser" "testuser@example.com" "Test" "User" "test123" "$TOKEN"
+create_user "internal" "admin" "admin@example.com" "Admin" "User" "admin123" "$TOKEN"
+create_user "internal" "developer" "dev@example.com" "Dev" "User" "dev123" "$TOKEN"
+
+# Add test users to appropriate groups
+echo "👥 Adding test users to groups..."
+add_user_to_group "internal" "testuser" "developers" "$TOKEN"
+add_user_to_group "internal" "admin" "platform-admins" "$TOKEN"
+add_user_to_group "internal" "developer" "developers" "$TOKEN"
+
+# Create test users in partners realm
+echo "👤 Creating test users in partners realm..."
+create_user "partners" "partner1" "partner1@example.com" "Partner" "One" "partner123" "$TOKEN"
+create_user "partners" "partner2" "partner2@example.com" "Partner" "Two" "partner123" "$TOKEN"
+
+# Add test users to groups
+echo "👥 Adding test users to groups..."
+add_user_to_group "internal" "admin" "platform-admins" "$TOKEN"
+add_user_to_group "internal" "developer" "developers" "$TOKEN"
+add_user_to_group "partners" "partner1" "verified-partners" "$TOKEN"
+add_user_to_group "partners" "partner2" "trial-users" "$TOKEN"
+
 echo ""
 echo "🎉 Keycloak realm configuration completed successfully!"
 echo "=================================================="
@@ -505,6 +629,15 @@ echo ""
 echo "👥 Default Groups Created:"
 echo "  Internal: platform-admins, developers, api-owners"
 echo "  Partners: verified-partners, trial-users"
+echo ""
+echo "👤 Test Users Created:"
+echo "  Internal Realm:"
+echo "    • testuser / test123 (developers group) - For Backstage testing"
+echo "    • admin / admin123 (platform-admins group)"
+echo "    • developer / dev123 (developers group)"
+echo "  Partners Realm:"
+echo "    • partner1 / partner123 (verified-partners group)"
+echo "    • partner2 / partner123 (trial-users group)"
 echo ""
 echo "⚠️  Important: Change default client secrets in production!"
 echo ""
