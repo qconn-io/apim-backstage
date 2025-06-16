@@ -27,6 +27,23 @@ html {
   outline-offset: 2px !important;
 }
 
+/* High contrast focus for better accessibility */
+@media (prefers-contrast: high) {
+  *:focus {
+    outline: 3px solid #ffffff !important;
+    outline-offset: 3px !important;
+  }
+}
+
+/* Reduced motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
@@ -57,6 +74,53 @@ html {
 /* Custom gradient backgrounds */
 .gradient-bg-primary {
   background: linear-gradient(135deg, #6366f1 0%, #06b6d4 100%);
+}
+
+/* Loading state animations */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.loading-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Error state styling */
+.error-state {
+  border: 1px solid #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  padding: 16px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+/* Success state styling */
+.success-state {
+  border: 1px solid #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  padding: 16px;
+  border-radius: 8px;
+}
+
+/* Hover effects for interactive elements */
+.interactive-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.15);
+  transition: all 0.3s ease;
+}
+
+/* Focus-within for better keyboard navigation */
+.interactive-card:focus-within {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.25);
+  border-color: #6366f1;
 }
 
 .gradient-bg-secondary {
@@ -178,6 +242,82 @@ html {
   border-radius: 12px;
   border: 1px solid rgba(99, 102, 241, 0.2);
   transition: all 0.2s ease;
+}
+
+/* Responsive design breakpoints */
+@media (max-width: 768px) {
+  .hero-section {
+    padding: 24px 16px !important;
+  }
+  
+  .quick-action-card {
+    margin-bottom: 16px;
+  }
+  
+  .stat-card {
+    padding: 16px !important;
+  }
+}
+
+/* Dark mode specific styles */
+@media (prefers-color-scheme: dark) {
+  .glass-card {
+    background: rgba(30, 41, 59, 0.6) !important;
+    border: 1px solid rgba(71, 85, 105, 0.3) !important;
+  }
+}
+
+/* Light mode specific styles */
+@media (prefers-color-scheme: light) {
+  .glass-card {
+    background: rgba(255, 255, 255, 0.8) !important;
+    border: 1px solid rgba(226, 232, 240, 0.8) !important;
+  }
+}
+
+/* Skip link for screen readers */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: #6366f1;
+  color: white;
+  padding: 8px;
+  border-radius: 4px;
+  text-decoration: none;
+  z-index: 9999;
+  transition: top 0.3s;
+}
+
+.skip-link:focus {
+  top: 6px;
+}
+
+/* ARIA live regions */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .gradient-text {
+    background: none !important;
+    color: currentColor !important;
+    -webkit-text-fill-color: currentColor !important;
+  }
+  
+  .glass-card {
+    background: var(--background-paper) !important;
+    border: 2px solid currentColor !important;
+  }
 }
 
 .search-bar:focus-within {
