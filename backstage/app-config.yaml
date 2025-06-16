@@ -134,6 +134,25 @@ catalog:
       rules:
         - allow: [User, Group]
 
+    # API validation examples for testing Epic 4
+    - type: file
+      target: ./examples/valid-openapi-api.yaml
+      rules:
+        - allow: [API]
+    - type: file
+      target: ./examples/valid-asyncapi-api.yaml
+      rules:
+        - allow: [API]
+    # Uncomment to test validation failure (will prevent backend startup)
+    # - type: file
+    #   target: ./examples/invalid-openapi-api.yaml
+    #   rules:
+    #     - allow: [API]
+    # - type: file
+    #   target: ./examples/invalid-asyncapi-api.yaml
+    #   rules:
+    #     - allow: [API]
+
     ## Uncomment these lines to add more example data
     # - type: url
     #   target: https://github.com/backstage/backstage/blob/master/packages/catalog-model/examples/all.yaml

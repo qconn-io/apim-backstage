@@ -1,0 +1,19 @@
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: invalid-openapi-example
+  description: An invalid OpenAPI specification that should fail validation
+spec:
+  type: openapi
+  lifecycle: experimental
+  owner: platform-team
+  definition: |
+    openapi: 3.0.0
+    # Missing required 'info' field - this should cause validation to fail
+    paths:
+      /broken:
+        get:
+          summary: This is a broken API spec
+          responses:
+            '200':
+              description: Response without content

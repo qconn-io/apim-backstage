@@ -1,0 +1,15 @@
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: invalid-asyncapi-example
+  description: An invalid AsyncAPI specification that should fail validation
+spec:
+  type: asyncapi
+  lifecycle: experimental
+  owner: platform-team
+  definition: |
+    asyncapi: 2.0.0
+    # Missing required 'info' field - this should cause validation to fail
+    channels:
+      broken/channel:
+        description: This is a broken async API spec

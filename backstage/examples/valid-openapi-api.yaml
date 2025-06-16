@@ -1,0 +1,42 @@
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: valid-openapi-example
+  description: A valid OpenAPI 3.0 specification for testing the validator
+spec:
+  type: openapi
+  lifecycle: experimental
+  owner: platform-team
+  definition: |
+    openapi: 3.0.0
+    info:
+      title: Payments API
+      description: API for processing payments
+      version: 1.0.0
+    paths:
+      /payments:
+        post:
+          summary: Create a payment
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    amount:
+                      type: number
+                    currency:
+                      type: string
+          responses:
+            '201':
+              description: Payment created
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      status:
+                        type: string
