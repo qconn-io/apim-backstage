@@ -12,7 +12,7 @@ echo "4. ✅ Plugin throws ProcessingError for invalid specs"
 echo ""
 
 echo "🧪 Running unit tests..."
-cd /home/mkogan/projects/apim-backstage/backstage/plugins/catalog-validator-backend-backend
+cd "$(dirname "$0")/../../backstage/plugins/catalog-validator-backend-backend"
 yarn test --watchAll=false
 
 echo ""
@@ -32,7 +32,7 @@ echo ""
 echo "🚀 Integration Test:"
 echo "Starting Backstage with valid API examples to verify integration..."
 
-cd /home/mkogan/projects/apim-backstage/backstage
+cd "$(dirname "$0")/../../backstage"
 
 # Start Backstage in background to test if it loads our plugin
 echo "Starting Backstage backend (this may take a minute)..."

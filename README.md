@@ -163,6 +163,39 @@ The implementation follows a phased approach optimized for enterprise requiremen
 
 **Legend**: ✅ Complete | 🔄 In Progress | 📋 Planned
 
+## Development Tools & Scripts
+
+The project includes comprehensive testing and verification tools located in the `scripts/` directory:
+
+### Testing Scripts (`scripts/tests/`)
+```bash
+# Database connectivity test
+node scripts/tests/test-db.js
+
+# Environment configuration test
+node scripts/tests/test-env.js
+
+# Integration test suite
+bash scripts/tests/test-integration.sh
+
+# Epic 4 validation failure test
+bash scripts/tests/test-epic4-validation-failure.sh
+```
+
+### Verification Scripts (`scripts/verification/`)
+```bash
+# Verify authentication flow
+bash scripts/verification/verify-auth-flow.sh
+
+# Verify Epic 3 implementation
+bash scripts/verification/verify-epic3.sh
+
+# Verify Epic 4 implementation
+bash scripts/verification/verify-epic4.sh
+```
+
+For detailed documentation of all available scripts, see [`scripts/README.md`](./scripts/README.md).
+
 ## Contributing
 
 This project follows enterprise development practices:

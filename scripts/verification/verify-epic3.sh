@@ -7,6 +7,9 @@ echo "🔍 Verifying Epic 3: Backstage Scaffolding & Base Auth"
 echo "======================================================="
 echo
 
+# Change to project root directory
+cd "$(dirname "$0")/../.."
+
 # Test 1: Verify Docker Compose uses local build
 echo "1. Checking Docker Compose configuration..."
 if grep -q "build:" docker-compose.yml && grep -q "context: ./backstage" docker-compose.yml; then

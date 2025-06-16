@@ -8,7 +8,7 @@ echo "This test will temporarily enable an invalid API spec to verify that the"
 echo "catalog validator correctly prevents ingestion of invalid specifications."
 echo ""
 
-cd /home/mkogan/projects/apim-backstage/backstage
+cd "$(dirname "$0")/../../backstage"
 
 # Create a temporary config with invalid API enabled
 echo "Creating temporary config with invalid API spec..."
