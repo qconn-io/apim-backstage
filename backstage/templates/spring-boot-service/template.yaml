@@ -1,0 +1,158 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: spring-boot-service-template
+  title: Spring Boot API Service
+  description: Creates a production-ready Spring Boot service implementing a REST API with comprehensive tooling and best practices
+  tags:
+    - java
+    - spring-boot
+    - maven
+    - api
+    - service
+    - microservice
+spec:
+  owner: platform-team
+  type: service
+  
+  parameters:
+    - title: Service Information
+      required:
+        - name
+        - description
+        - package_name
+      properties:
+        name:
+          title: Service Name
+          type: string
+          description: The name of your Spring Boot service (e.g., user-management-service)
+          pattern: '^[a-z0-9-]+$'
+          ui:autofocus: true
+        description:
+          title: Service Description
+          type: string
+          description: A brief description of what this service does
+          ui:widget: textarea
+          ui:options:
+            rows: 3
+        package_name:
+          title: Java Package Name
+          type: string
+          description: Base Java package (e.g., com.company.service)
+          pattern: '^[a-z0-9.]+$'
+          default: 'com.example.service'
+        port:
+          title: Service Port
+          type: integer
+          description: Port number for the service
+          default: 8080
+        java_version:
+          title: Java Version
+          type: string
+          description: Java version to use
+          enum:
+            - '17'
+            - '21'
+          default: '17'
+        contact_name:
+          title: Contact Name
+          type: string
+          description: Name of the service maintainer/contact person
+        contact_email:
+          title: Contact Email
+          type: string
+          description: Email of the service maintainer/contact person
+          format: email
+
+    - title: Service Configuration
+      properties:
+        include_database:
+          title: Include Database Support
+          type: boolean
+          description: Include PostgreSQL database with JPA/Hibernate
+          default: true
+        include_security:
+          title: Include Spring Security
+          type: boolean
+          description: Include JWT authentication with Spring Security
+          default: true
+        include_swagger:
+          title: Include Swagger/OpenAPI
+          type: boolean
+          description: Include Swagger UI for API documentation
+          default: true
+        include_testing:
+          title: Include Testing Setup
+          type: boolean
+          description: Include comprehensive testing with JUnit 5 and TestContainers
+          default: true
+        include_docker:
+          title: Include Docker
+          type: boolean
+          description: Include Dockerfile and docker-compose.yml
+          default: true
+        include_monitoring:
+          title: Include Monitoring
+          type: boolean
+          description: Include Actuator endpoints for monitoring
+          default: true
+
+    - title: Choose a location
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+              - gitlab.com
+
+  steps:
+    - id: fetch-base
+      name: Fetch Base
+      action: fetch:template
+      input:
+        url: ./content
+        values:
+          name: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+          package_name: ${{ parameters.package_name }}
+          port: ${{ parameters.port }}
+          java_version: ${{ parameters.java_version }}
+          contact_name: ${{ parameters.contact_name }}
+          contact_email: ${{ parameters.contact_email }}
+          include_database: ${{ parameters.include_database }}
+          include_security: ${{ parameters.include_security }}
+          include_swagger: ${{ parameters.include_swagger }}
+          include_testing: ${{ parameters.include_testing }}
+          include_docker: ${{ parameters.include_docker }}
+          include_monitoring: ${{ parameters.include_monitoring }}
+
+    - id: publish
+      name: Publish
+      action: publish:github
+      input:
+        allowedHosts: ['github.com', 'gitlab.com']
+        description: 'Spring Boot API Service: ${{ parameters.description }}'
+        repoUrl: ${{ parameters.repoUrl }}
+        defaultBranch: 'main'
+
+    - id: register
+      name: Register
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}
+      - title: API Documentation
+        url: ${{ steps['publish'].output.remoteUrl }}/blob/main/README.md

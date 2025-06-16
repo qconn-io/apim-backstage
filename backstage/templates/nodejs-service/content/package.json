@@ -1,0 +1,99 @@
+{
+  "name": "${{ values.name }}",
+  "version": "1.0.0",
+  "description": "${{ values.description }}",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "clean": "rimraf dist",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "format": "prettier --write src/**/*.ts",
+    {% if values.include_testing %}
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    {% endif %}
+    {% if values.include_database %}
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    {% endif %}
+    "prepare": "husky install"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "morgan": "^1.10.0",
+    "dotenv": "^16.3.1",
+    {% if values.include_auth %}
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3",
+    {% endif %}
+    {% if values.include_database %}
+    "@prisma/client": "^5.6.0",
+    {% endif %}
+    {% if values.include_swagger %}
+    "swagger-ui-express": "^5.0.0",
+    "swagger-jsdoc": "^6.2.8",
+    {% endif %}
+    {% if values.include_monitoring %}
+    "prom-client": "^15.0.0",
+    {% endif %}
+    "zod": "^3.22.4",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.9.0",
+    "@types/cors": "^2.8.17",
+    "@types/morgan": "^1.9.9",
+    {% if values.include_auth %}
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/bcryptjs": "^2.4.6",
+    {% endif %}
+    {% if values.include_swagger %}
+    "@types/swagger-ui-express": "^4.1.6",
+    "@types/swagger-jsdoc": "^6.0.4",
+    {% endif %}
+    "typescript": "^5.2.2",
+    "tsx": "^4.1.0",
+    "rimraf": "^5.0.5",
+    "eslint": "^8.54.0",
+    "@typescript-eslint/eslint-plugin": "^6.12.0",
+    "@typescript-eslint/parser": "^6.12.0",
+    "prettier": "^3.1.0",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.1.0",
+    {% if values.include_testing %}
+    "jest": "^29.7.0",
+    "@types/jest": "^29.5.8",
+    "ts-jest": "^29.1.1",
+    "supertest": "^6.3.3",
+    "@types/supertest": "^2.0.16",
+    {% endif %}
+    {% if values.include_database %}
+    "prisma": "^5.6.0",
+    {% endif %}
+    "nodemon": "^3.0.1"
+  },
+  {% if values.contact_name or values.contact_email %}
+  "author": "{% if values.contact_name %}${{ values.contact_name }}{% endif %}{% if values.contact_email %} <${{ values.contact_email }}>{% endif %}",
+  {% endif %}
+  "license": "MIT",
+  "lint-staged": {
+    "*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  }
+}

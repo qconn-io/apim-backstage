@@ -1,0 +1,145 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: event-asyncapi-template
+  title: Event API (AsyncAPI Specification)
+  description: Creates an Event-driven API specification using AsyncAPI 2.6 with comprehensive message schemas
+  tags:
+    - api
+    - asyncapi
+    - events
+    - messaging
+    - pubsub
+spec:
+  owner: platform-team
+  type: api
+  
+  parameters:
+    - title: Event API Information
+      required:
+        - name
+        - description
+      properties:
+        name:
+          title: Event API Name
+          type: string
+          description: The name of your Event API (e.g., user-events-api)
+          pattern: '^[a-z0-9-]+$'
+          ui:autofocus: true
+        description:
+          title: API Description
+          type: string
+          description: A brief description of what events this API handles
+          ui:widget: textarea
+          ui:options:
+            rows: 3
+        version:
+          title: API Version
+          type: string
+          description: Initial version of the API
+          default: '1.0.0'
+        contact_name:
+          title: Contact Name
+          type: string
+          description: Name of the API maintainer/contact person
+        contact_email:
+          title: Contact Email
+          type: string
+          description: Email of the API maintainer/contact person
+          format: email
+
+    - title: Messaging Configuration
+      properties:
+        protocol:
+          title: Messaging Protocol
+          type: string
+          description: The messaging protocol to use
+          enum:
+            - kafka
+            - rabbitmq
+            - mqtt
+            - websockets
+            - redis
+          default: kafka
+        server_url:
+          title: Server URL
+          type: string
+          description: Default server URL for the messaging system
+          default: 'localhost:9092'
+        include_security:
+          title: Include Security
+          type: boolean
+          description: Include security schemas for authentication
+          default: true
+        include_examples:
+          title: Include Examples
+          type: boolean
+          description: Include comprehensive message examples
+          default: true
+        event_types:
+          title: Event Types
+          type: array
+          description: Types of events this API will handle
+          items:
+            type: string
+          default:
+            - user.created
+            - user.updated
+            - user.deleted
+
+    - title: Choose a location
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+              - gitlab.com
+
+  steps:
+    - id: fetch-base
+      name: Fetch Base
+      action: fetch:template
+      input:
+        url: ./content
+        values:
+          name: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+          version: ${{ parameters.version }}
+          contact_name: ${{ parameters.contact_name }}
+          contact_email: ${{ parameters.contact_email }}
+          protocol: ${{ parameters.protocol }}
+          server_url: ${{ parameters.server_url }}
+          include_security: ${{ parameters.include_security }}
+          include_examples: ${{ parameters.include_examples }}
+          event_types: ${{ parameters.event_types }}
+
+    - id: publish
+      name: Publish
+      action: publish:github
+      input:
+        allowedHosts: ['github.com', 'gitlab.com']
+        description: 'Event API specification: ${{ parameters.description }}'
+        repoUrl: ${{ parameters.repoUrl }}
+        defaultBranch: 'main'
+
+    - id: register
+      name: Register
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}
+      - title: View API Documentation
+        url: ${{ steps['publish'].output.remoteUrl }}/blob/main/asyncapi.yaml

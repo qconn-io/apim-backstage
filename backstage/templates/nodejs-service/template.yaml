@@ -1,0 +1,141 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: nodejs-service-template
+  title: Node.js API Service
+  description: Creates a production-ready Node.js service implementing a REST API with Express, TypeScript, and comprehensive tooling
+  tags:
+    - nodejs
+    - express
+    - typescript
+    - api
+    - service
+    - microservice
+spec:
+  owner: platform-team
+  type: service
+  
+  parameters:
+    - title: Service Information
+      required:
+        - name
+        - description
+      properties:
+        name:
+          title: Service Name
+          type: string
+          description: The name of your Node.js service (e.g., user-management-service)
+          pattern: '^[a-z0-9-]+$'
+          ui:autofocus: true
+        description:
+          title: Service Description
+          type: string
+          description: A brief description of what this service does
+          ui:widget: textarea
+          ui:options:
+            rows: 3
+        port:
+          title: Service Port
+          type: integer
+          description: Port number for the service
+          default: 3000
+        contact_name:
+          title: Contact Name
+          type: string
+          description: Name of the service maintainer/contact person
+        contact_email:
+          title: Contact Email
+          type: string
+          description: Email of the service maintainer/contact person
+          format: email
+
+    - title: Service Configuration
+      properties:
+        include_database:
+          title: Include Database Support
+          type: boolean
+          description: Include PostgreSQL database with Prisma ORM
+          default: true
+        include_auth:
+          title: Include Authentication
+          type: boolean
+          description: Include JWT authentication middleware
+          default: true
+        include_swagger:
+          title: Include Swagger/OpenAPI
+          type: boolean
+          description: Include Swagger UI for API documentation
+          default: true
+        include_testing:
+          title: Include Testing Setup
+          type: boolean
+          description: Include Jest testing framework and example tests
+          default: true
+        include_docker:
+          title: Include Docker
+          type: boolean
+          description: Include Dockerfile and docker-compose.yml
+          default: true
+        include_monitoring:
+          title: Include Monitoring
+          type: boolean
+          description: Include Prometheus metrics and health checks
+          default: true
+
+    - title: Choose a location
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+              - gitlab.com
+
+  steps:
+    - id: fetch-base
+      name: Fetch Base
+      action: fetch:template
+      input:
+        url: ./content
+        values:
+          name: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+          port: ${{ parameters.port }}
+          contact_name: ${{ parameters.contact_name }}
+          contact_email: ${{ parameters.contact_email }}
+          include_database: ${{ parameters.include_database }}
+          include_auth: ${{ parameters.include_auth }}
+          include_swagger: ${{ parameters.include_swagger }}
+          include_testing: ${{ parameters.include_testing }}
+          include_docker: ${{ parameters.include_docker }}
+          include_monitoring: ${{ parameters.include_monitoring }}
+
+    - id: publish
+      name: Publish
+      action: publish:github
+      input:
+        allowedHosts: ['github.com', 'gitlab.com']
+        description: 'Node.js API Service: ${{ parameters.description }}'
+        repoUrl: ${{ parameters.repoUrl }}
+        defaultBranch: 'main'
+
+    - id: register
+      name: Register
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}
+      - title: API Documentation
+        url: ${{ steps['publish'].output.remoteUrl }}/blob/main/docs/api.md

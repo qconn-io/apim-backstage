@@ -122,6 +122,27 @@ catalog:
     - type: file
       target: ./examples/entities.yaml
 
+    # Software Templates
+    - type: file
+      target: ./templates/rest-api-openapi/template.yaml
+      rules:
+        - allow: [Template]
+
+    - type: file
+      target: ./templates/event-asyncapi/template.yaml
+      rules:
+        - allow: [Template]
+
+    - type: file
+      target: ./templates/nodejs-service/template.yaml
+      rules:
+        - allow: [Template]
+
+    - type: file
+      target: ./templates/spring-boot-service/template.yaml
+      rules:
+        - allow: [Template]
+
     # Local example template
     - type: file
       target: ./examples/template/template.yaml

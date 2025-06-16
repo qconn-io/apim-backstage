@@ -1,0 +1,321 @@
+asyncapi: 2.6.0
+info:
+  title: ${{ values.name | title }}
+  version: ${{ values.version }}
+  description: ${{ values.description }}
+  {% if values.contact_name or values.contact_email %}
+  contact:
+    {% if values.contact_name %}name: ${{ values.contact_name }}{% endif %}
+    {% if values.contact_email %}email: ${{ values.contact_email }}{% endif %}
+  {% endif %}
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  production:
+    url: ${{ values.server_url }}
+    description: Production server
+    {% if values.protocol == 'kafka' %}
+    protocol: kafka
+    {% elif values.protocol == 'rabbitmq' %}
+    protocol: amqp
+    {% elif values.protocol == 'mqtt' %}
+    protocol: mqtt
+    {% elif values.protocol == 'websockets' %}
+    protocol: ws
+    {% elif values.protocol == 'redis' %}
+    protocol: redis
+    {% endif %}
+    {% if values.include_security %}
+    security:
+      - sasl-ssl: []
+    {% endif %}
+
+  development:
+    url: localhost:9092
+    description: Development server
+    {% if values.protocol == 'kafka' %}
+    protocol: kafka
+    {% elif values.protocol == 'rabbitmq' %}
+    protocol: amqp
+    {% elif values.protocol == 'mqtt' %}
+    protocol: mqtt
+    {% elif values.protocol == 'websockets' %}
+    protocol: ws
+    {% elif values.protocol == 'redis' %}
+    protocol: redis
+    {% endif %}
+
+defaultContentType: application/json
+
+channels:
+  {% for event_type in values.event_types %}
+  ${{ event_type.replace('.', '/') }}:
+    description: Channel for ${{ event_type }} events
+    {% if values.protocol == 'kafka' %}
+    bindings:
+      kafka:
+        topic: ${{ event_type.replace('.', '-') }}
+        partitions: 3
+        replicas: 2
+    {% endif %}
+    publish:
+      summary: Publish ${{ event_type }} event
+      operationId: publish${{ event_type.replace('.', '').title() }}Event
+      message:
+        $ref: '#/components/messages/${{ event_type.replace('.', '') }}Event'
+    subscribe:
+      summary: Subscribe to ${{ event_type }} events
+      operationId: subscribe${{ event_type.replace('.', '').title() }}Event
+      message:
+        $ref: '#/components/messages/${{ event_type.replace('.', '') }}Event'
+  {% endfor %}
+
+  health/check:
+    description: Health check channel for monitoring
+    subscribe:
+      summary: Health check events
+      operationId: subscribeHealthCheck
+      message:
+        $ref: '#/components/messages/healthCheckEvent'
+
+components:
+  {% if values.include_security %}
+  securitySchemes:
+    sasl-ssl:
+      type: plain
+      description: SASL/SSL authentication
+    
+    apiKey:
+      type: apiKey
+      in: user
+      description: API Key for authentication
+  {% endif %}
+
+  messages:
+    {% for event_type in values.event_types %}
+    ${{ event_type.replace('.', '') }}Event:
+      name: ${{ event_type }}
+      title: ${{ event_type.title() }} Event
+      summary: Event triggered when ${{ event_type.split('.')[1] if '.' in event_type else event_type }}
+      contentType: application/json
+      {% if values.protocol == 'kafka' %}
+      bindings:
+        kafka:
+          key:
+            type: string
+            description: User ID as message key
+      {% endif %}
+      payload:
+        $ref: '#/components/schemas/${{ event_type.replace('.', '').title() }}EventPayload'
+      {% if values.include_examples %}
+      examples:
+        - name: Example ${{ event_type }} event
+          summary: Example of a ${{ event_type }} event
+          payload:
+            {% if 'created' in event_type %}
+            eventId: "evt-123e4567-e89b-12d3-a456-426614174000"
+            eventType: "${{ event_type }}"
+            timestamp: "2024-01-01T12:00:00Z"
+            version: "1.0"
+            source: "user-service"
+            data:
+              id: "usr-123e4567-e89b-12d3-a456-426614174000"
+              name: "John Doe"
+              email: "john.doe@example.com"
+              createdAt: "2024-01-01T12:00:00Z"
+            {% elif 'updated' in event_type %}
+            eventId: "evt-123e4567-e89b-12d3-a456-426614174001"
+            eventType: "${{ event_type }}"
+            timestamp: "2024-01-01T12:30:00Z"
+            version: "1.0"
+            source: "user-service"
+            data:
+              id: "usr-123e4567-e89b-12d3-a456-426614174000"
+              name: "John Smith"
+              email: "john.smith@example.com"
+              updatedAt: "2024-01-01T12:30:00Z"
+              changes:
+                - field: "name"
+                  oldValue: "John Doe"
+                  newValue: "John Smith"
+            {% elif 'deleted' in event_type %}
+            eventId: "evt-123e4567-e89b-12d3-a456-426614174002"
+            eventType: "${{ event_type }}"
+            timestamp: "2024-01-01T13:00:00Z"
+            version: "1.0"
+            source: "user-service"
+            data:
+              id: "usr-123e4567-e89b-12d3-a456-426614174000"
+              deletedAt: "2024-01-01T13:00:00Z"
+            {% else %}
+            eventId: "evt-123e4567-e89b-12d3-a456-426614174000"
+            eventType: "${{ event_type }}"
+            timestamp: "2024-01-01T12:00:00Z"
+            version: "1.0"
+            source: "service"
+            data:
+              message: "Event data goes here"
+            {% endif %}
+      {% endif %}
+    {% endfor %}
+
+    healthCheckEvent:
+      name: health.check
+      title: Health Check Event
+      summary: Health status event
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/HealthCheckEventPayload'
+      {% if values.include_examples %}
+      examples:
+        - name: Healthy status
+          payload:
+            eventId: "evt-health-001"
+            eventType: "health.check"
+            timestamp: "2024-01-01T12:00:00Z"
+            version: "1.0"
+            source: "${{ values.name }}"
+            data:
+              status: "healthy"
+              uptime: 3600
+              checks:
+                database: "ok"
+                cache: "ok"
+      {% endif %}
+
+  schemas:
+    BaseEvent:
+      type: object
+      required:
+        - eventId
+        - eventType
+        - timestamp
+        - version
+        - source
+        - data
+      properties:
+        eventId:
+          type: string
+          format: uuid
+          description: Unique identifier for the event
+        eventType:
+          type: string
+          description: Type of the event
+        timestamp:
+          type: string
+          format: date-time
+          description: When the event occurred
+        version:
+          type: string
+          description: Event schema version
+        source:
+          type: string
+          description: Source service that produced the event
+        correlationId:
+          type: string
+          format: uuid
+          description: Optional correlation ID for tracing
+        data:
+          type: object
+          description: Event-specific data
+
+    {% for event_type in values.event_types %}
+    ${{ event_type.replace('.', '').title() }}EventPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          properties:
+            eventType:
+              type: string
+              enum: ['${{ event_type }}']
+            data:
+              type: object
+              {% if 'created' in event_type %}
+              required:
+                - id
+                - name
+                - email
+                - createdAt
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                createdAt:
+                  type: string
+                  format: date-time
+              {% elif 'updated' in event_type %}
+              required:
+                - id
+                - updatedAt
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                updatedAt:
+                  type: string
+                  format: date-time
+                changes:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      field:
+                        type: string
+                      oldValue:
+                        type: string
+                      newValue:
+                        type: string
+              {% elif 'deleted' in event_type %}
+              required:
+                - id
+                - deletedAt
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                deletedAt:
+                  type: string
+                  format: date-time
+              {% else %}
+              properties:
+                message:
+                  type: string
+                  description: Event message
+              {% endif %}
+    {% endfor %}
+
+    HealthCheckEventPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          properties:
+            eventType:
+              type: string
+              enum: ['health.check']
+            data:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [healthy, unhealthy, degraded]
+                uptime:
+                  type: integer
+                  description: Uptime in seconds
+                checks:
+                  type: object
+                  additionalProperties:
+                    type: string

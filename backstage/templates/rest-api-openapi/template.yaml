@@ -1,0 +1,127 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: rest-api-openapi-template
+  title: REST API (OpenAPI Specification)
+  description: Creates a REST API specification using OpenAPI 3.0 with comprehensive documentation
+  tags:
+    - api
+    - openapi
+    - rest
+    - specification
+spec:
+  owner: platform-team
+  type: api
+  
+  parameters:
+    - title: API Information
+      required:
+        - name
+        - description
+      properties:
+        name:
+          title: API Name
+          type: string
+          description: The name of your REST API (e.g., user-management-api)
+          pattern: '^[a-z0-9-]+$'
+          ui:autofocus: true
+        description:
+          title: API Description
+          type: string
+          description: A brief description of what this API does
+          ui:widget: textarea
+          ui:options:
+            rows: 3
+        version:
+          title: API Version
+          type: string
+          description: Initial version of the API
+          default: '1.0.0'
+        contact_name:
+          title: Contact Name
+          type: string
+          description: Name of the API maintainer/contact person
+        contact_email:
+          title: Contact Email
+          type: string
+          description: Email of the API maintainer/contact person
+          format: email
+
+    - title: API Configuration
+      properties:
+        base_path:
+          title: Base Path
+          type: string
+          description: Base path for the API (e.g., /api/v1)
+          default: '/api/v1'
+        server_url:
+          title: Server URL
+          type: string
+          description: Default server URL for the API
+          default: 'https://api.example.com'
+        add_authentication:
+          title: Add Authentication
+          type: boolean
+          description: Include authentication schemas in the API spec
+          default: true
+        include_examples:
+          title: Include Examples
+          type: boolean
+          description: Include comprehensive request/response examples
+          default: true
+
+    - title: Choose a location
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+              - gitlab.com
+
+  steps:
+    - id: fetch-base
+      name: Fetch Base
+      action: fetch:template
+      input:
+        url: ./content
+        values:
+          name: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+          version: ${{ parameters.version }}
+          contact_name: ${{ parameters.contact_name }}
+          contact_email: ${{ parameters.contact_email }}
+          base_path: ${{ parameters.base_path }}
+          server_url: ${{ parameters.server_url }}
+          add_authentication: ${{ parameters.add_authentication }}
+          include_examples: ${{ parameters.include_examples }}
+
+    - id: publish
+      name: Publish
+      action: publish:github
+      input:
+        allowedHosts: ['github.com', 'gitlab.com']
+        description: 'REST API specification: ${{ parameters.description }}'
+        repoUrl: ${{ parameters.repoUrl }}
+        defaultBranch: 'main'
+
+    - id: register
+      name: Register
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}
+      - title: View API Documentation
+        url: ${{ steps['publish'].output.remoteUrl }}/blob/main/openapi.yaml

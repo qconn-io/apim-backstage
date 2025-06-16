@@ -1,0 +1,378 @@
+openapi: 3.0.3
+info:
+  title: ${{ values.name | title }}
+  description: ${{ values.description }}
+  version: ${{ values.version }}
+  contact:
+    {% if values.contact_name %}name: ${{ values.contact_name }}{% endif %}
+    {% if values.contact_email %}email: ${{ values.contact_email }}{% endif %}
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: ${{ values.server_url }}${{ values.base_path }}
+    description: Production server
+  - url: http://localhost:3000${{ values.base_path }}
+    description: Development server
+
+{% if values.add_authentication %}
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    apiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  schemas:
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        details:
+          type: string
+
+    Health:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+        timestamp:
+          type: string
+          format: date-time
+        version:
+          type: string
+
+    User:
+      type: object
+      required:
+        - id
+        - name
+        - email
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateUserRequest:
+      type: object
+      required:
+        - name
+        - email
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+
+    UserList:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+{% endif %}
+
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      description: Returns the health status of the API
+      tags:
+        - Health
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+              {% if values.include_examples %}
+              example:
+                status: healthy
+                timestamp: '2024-01-01T12:00:00Z'
+                version: '${{ values.version }}'
+              {% endif %}
+
+  /users:
+    get:
+      summary: Get all users
+      description: Retrieve a list of all users
+      tags:
+        - Users
+      {% if values.add_authentication %}
+      security:
+        - bearerAuth: []
+      {% endif %}
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 10
+            maximum: 100
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserList'
+              {% if values.include_examples %}
+              example:
+                users:
+                  - id: '123e4567-e89b-12d3-a456-426614174000'
+                    name: 'John Doe'
+                    email: 'john.doe@example.com'
+                    created_at: '2024-01-01T12:00:00Z'
+                    updated_at: '2024-01-01T12:00:00Z'
+                total: 1
+                page: 1
+                limit: 10
+              {% endif %}
+        {% if values.add_authentication %}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        {% endif %}
+
+    post:
+      summary: Create a new user
+      description: Create a new user in the system
+      tags:
+        - Users
+      {% if values.add_authentication %}
+      security:
+        - bearerAuth: []
+      {% endif %}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+            {% if values.include_examples %}
+            example:
+              name: 'Jane Doe'
+              email: 'jane.doe@example.com'
+            {% endif %}
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              {% if values.include_examples %}
+              example:
+                id: '123e4567-e89b-12d3-a456-426614174001'
+                name: 'Jane Doe'
+                email: 'jane.doe@example.com'
+                created_at: '2024-01-01T12:00:00Z'
+                updated_at: '2024-01-01T12:00:00Z'
+              {% endif %}
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        {% if values.add_authentication %}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        {% endif %}
+
+  /users/{id}:
+    get:
+      summary: Get user by ID
+      description: Retrieve a specific user by their ID
+      tags:
+        - Users
+      {% if values.add_authentication %}
+      security:
+        - bearerAuth: []
+      {% endif %}
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              {% if values.include_examples %}
+              example:
+                id: '123e4567-e89b-12d3-a456-426614174000'
+                name: 'John Doe'
+                email: 'john.doe@example.com'
+                created_at: '2024-01-01T12:00:00Z'
+                updated_at: '2024-01-01T12:00:00Z'
+              {% endif %}
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        {% if values.add_authentication %}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        {% endif %}
+
+    put:
+      summary: Update user
+      description: Update an existing user
+      tags:
+        - Users
+      {% if values.add_authentication %}
+      security:
+        - bearerAuth: []
+      {% endif %}
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+            {% if values.include_examples %}
+            example:
+              name: 'John Smith'
+              email: 'john.smith@example.com'
+            {% endif %}
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        {% if values.add_authentication %}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        {% endif %}
+
+    delete:
+      summary: Delete user
+      description: Delete a user from the system
+      tags:
+        - Users
+      {% if values.add_authentication %}
+      security:
+        - bearerAuth: []
+      {% endif %}
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: User deleted successfully
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        {% if values.add_authentication %}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        {% endif %}
+
+tags:
+  - name: Health
+    description: Health check operations
+  - name: Users
+    description: User management operations

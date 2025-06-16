@@ -1,0 +1,14 @@
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: ${{ values.name }}
+  title: ${{ values.name | title }}
+  description: ${{ values.description }}
+  annotations:
+    backstage.io/techdocs-ref: dir:.
+spec:
+  type: asyncapi
+  lifecycle: development
+  owner: platform-team
+  definition:
+    $text: ./asyncapi.yaml
