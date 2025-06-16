@@ -15,7 +15,7 @@ backend:
         options:
           token: ${BACKEND_SECRET}
           subject: backstage-server
-  baseUrl: http://localhost:7007
+  baseUrl: http://localhost:3001
   listen:
     port: 7007
     # Uncomment the following host directive to bind to specific interfaces
@@ -40,15 +40,7 @@ backend:
   # workingDirectory: /tmp # Use this to configure a working directory for the scaffolder, defaults to the OS temp-dir
 
 integrations:
-  github:
-    - host: github.com
-      # This is a Personal Access Token or PAT from GitHub. You can find out how to generate this token, and more information
-      # about setting up the GitHub integration here: https://backstage.io/docs/integrations/github/locations#configuration
-      token: ${GITHUB_TOKEN}
-    ### Example for how to add your GitHub Enterprise instance using the API:
-    # - host: ghe.example.net
-    #   apiBaseUrl: https://ghe.example.net/api/v3
-    #   token: ${GHE_TOKEN}
+  github: []
 
 proxy:
   ### Example for how to add a proxy endpoint for the frontend.
@@ -72,6 +64,9 @@ techdocs:
 auth:
   # see https://backstage.io/docs/auth/ to learn about auth providers
   environment: development
+  # Session configuration required for OIDC
+  session:
+    secret: ${SESSION_SECRET}
   # Enable experimental auth to fix guest provider issues
   experimentalExtraAllowedOrigins:
     - http://localhost:3001
@@ -85,10 +80,24 @@ auth:
     # - partners: http://localhost:8080/realms/partners/.well-known/openid-configuration
     oidc:
       development:
+        metadataUrl: http://localhost:8080/realms/internal/.well-known/openid-configuration
+        clientId: ${KEYCLOAK_CLIENT_ID}
+        clientSecret: ${KEYCLOAK_CLIENT_SECRET}
+        callbackUrl: http://localhost:3001/api/auth/oidc/handler/frame
+        additionalScopes:
+          - openid
+          - profile
+          - email
+        prompt: auto
+        signIn:
+          resolvers:
+            - resolver: emailMatchingUserEntityProfileEmail
+            - resolver: emailLocalPartMatchingUserEntityName
+      production:
         metadataUrl: ${KEYCLOAK_BASE_URL}/realms/internal/.well-known/openid-configuration
         clientId: ${KEYCLOAK_CLIENT_ID}
         clientSecret: ${KEYCLOAK_CLIENT_SECRET}
-        callbackUrl: http://localhost:7007/api/auth/oidc/handler/frame
+        callbackUrl: http://localhost:3001/api/auth/oidc/handler/frame
         additionalScopes:
           - openid
           - profile
@@ -111,17 +120,17 @@ catalog:
   locations:
     # Local example data, file locations are relative to the backend process, typically `packages/backend`
     - type: file
-      target: ../../examples/entities.yaml
+      target: ./examples/entities.yaml
 
     # Local example template
     - type: file
-      target: ../../examples/template/template.yaml
+      target: ./examples/template/template.yaml
       rules:
         - allow: [Template]
 
     # Local example organizational data
     - type: file
-      target: ../../examples/org.yaml
+      target: ./examples/org.yaml
       rules:
         - allow: [User, Group]
 

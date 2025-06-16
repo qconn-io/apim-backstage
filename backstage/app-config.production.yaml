@@ -1,17 +1,21 @@
 app:
   # Should be the same as backend.baseUrl when using the `app-backend` plugin.
-  baseUrl: http://localhost:7007
+  baseUrl: http://localhost:3001
 
 backend:
   # Note that the baseUrl should be the URL that the browser and other clients
   # should use when communicating with the backend, i.e. it needs to be
   # reachable not just from within the backend host, but from all of your
-  # callers. When its value is "http://localhost:7007", it's strictly private
-  # and can't be reached by others.
-  baseUrl: http://localhost:7007
+  # callers. When its value is "http://localhost:3001", it's accessible from the host.
+  baseUrl: http://localhost:3001
   # The listener can also be expressed as a single <host>:<port> string. In this case we bind to
   # all interfaces, the most permissive setting. The right value depends on your specific deployment.
   listen: ':7007'
+  # CORS configuration for authentication
+  cors:
+    origin: http://localhost:3001
+    methods: [GET, HEAD, PATCH, POST, PUT, DELETE]
+    credentials: true
 
   # config options: https://node-postgres.com/apis/client
   database:
@@ -44,6 +48,9 @@ integrations:
 auth:
   # Environment for authentication
   environment: production
+  # Session configuration required for OIDC
+  session:
+    secret: ${SESSION_SECRET}
   providers:
     # Guest provider for development and testing
     guest: {}
@@ -52,7 +59,7 @@ auth:
         metadataUrl: ${KEYCLOAK_BASE_URL}/realms/internal/.well-known/openid-configuration
         clientId: ${KEYCLOAK_CLIENT_ID}
         clientSecret: ${KEYCLOAK_CLIENT_SECRET}
-        callbackUrl: http://localhost:7007/api/auth/oidc/handler/frame
+        callbackUrl: http://localhost:3001/api/auth/oidc/handler/frame
         additionalScopes:
           - openid
           - profile

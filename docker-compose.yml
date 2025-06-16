@@ -289,6 +289,9 @@ services:
       context: ./backstage
       dockerfile: Dockerfile
     container_name: backstage
+    command: ["node", "packages/backend", "--config", "app-config.yaml"]
+    extra_hosts:
+      - "localhost:host-gateway"
     environment:
       POSTGRES_HOST: postgres-backstage
       POSTGRES_PORT: 5432
@@ -299,8 +302,9 @@ services:
       KEYCLOAK_BASE_URL: http://keycloak:8080
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_BACKSTAGE_CLIENT_ID:-backstage}
       KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_BACKSTAGE_CLIENT_SECRET:-backstage-client-secret}
+      SESSION_SECRET: ${SESSION_SECRET:-backstage-session-secret-change-in-production}
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
-      NODE_ENV: production
+      NODE_ENV: development
     ports:
       - "${BACKSTAGE_PORT:-3001}:7007"
     depends_on:

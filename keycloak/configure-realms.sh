@@ -390,11 +390,14 @@ BACKSTAGE_CLIENT_CONFIG='{
     "publicClient": false,
     "frontchannelLogout": true,
     "redirectUris": [
-        "http://localhost:7007/api/auth/oidc/handler/frame",
-        "http://localhost:7007/*"
+        "http://localhost:3001/api/auth/oidc/handler/frame",
+        "http://localhost:3001/*",
+        "http://backstage:7007/api/auth/oidc/handler/frame",
+        "http://backstage:7007/*"
     ],
     "webOrigins": [
-        "http://localhost:7007"
+        "http://localhost:3001",
+        "http://backstage:7007"
     ],
     "protocol": "openid-connect",
     "attributes": {
@@ -592,9 +595,9 @@ create_group "partners" "trial-users" '{"name": "trial-users", "attributes": {"d
 
 # Create test users in internal realm
 echo "👤 Creating test users in internal realm..."
-create_user "internal" "testuser" "testuser@example.com" "Test" "User" "test123" "$TOKEN"
-create_user "internal" "admin" "admin@example.com" "Admin" "User" "admin123" "$TOKEN"
-create_user "internal" "developer" "dev@example.com" "Dev" "User" "dev123" "$TOKEN"
+create_user "internal" "testuser" "testuser@example.com" "Test" "User" "TestUser123" "$TOKEN"
+create_user "internal" "admin" "admin@example.com" "Admin" "User" "Admin123" "$TOKEN"
+create_user "internal" "developer" "dev@example.com" "Dev" "User" "DevUser123" "$TOKEN"
 
 # Add test users to appropriate groups
 echo "👥 Adding test users to groups..."
@@ -632,9 +635,9 @@ echo "  Partners: verified-partners, trial-users"
 echo ""
 echo "👤 Test Users Created:"
 echo "  Internal Realm:"
-echo "    • testuser / test123 (developers group) - For Backstage testing"
-echo "    • admin / admin123 (platform-admins group)"
-echo "    • developer / dev123 (developers group)"
+echo "    • testuser / TestUser123 (developers group) - For Backstage testing"
+echo "    • admin / Admin123 (platform-admins group)"
+echo "    • developer / DevUser123 (developers group)"
 echo "  Partners Realm:"
 echo "    • partner1 / partner123 (verified-partners group)"
 echo "    • partner2 / partner123 (trial-users group)"
